@@ -1,6 +1,6 @@
 
 {
-  "name": "CARL TECH",
+  "name": "𝐷𝐵𝑌✯ TECH",
   "description": "Buddy-XTR by carl william.",
   "logo": "https://files.catbox.moe/waszph.jpg",
   "keywords": ["CARL-TECH", "whatsapp-bot", "whatsapp-md-bot"],
@@ -8,14 +8,14 @@
   "stack": "container",
   "env": { 
     "SESSION_ID": {
-      "description": "Ensure your session Id starts with Buddy;;;",
+      "description": "Buddy;;;wIYXTQgT#eNFmLOoxmMhA4k2yF-8SlDc6GAtW6XQNM1bzHS-Z2Bs",
       "required": true,
-      "value": ""
+      "value": "true"
     },
     "MODE": {
       "description": "Set to 'public' or 'private' to define bot mode",
       "required": true,
-      "value": "public"
+      "value": "private"
     },
     "PREFIX": {
       "description": "Your Bot Prefix (default: .)",
@@ -25,12 +25,12 @@
     "OWNER_NAME": {
       "description": "Your name as the bot owner",
       "required": false,
-      "value": "𝖂𝖎𝖑𝖑𝖎𝖆𝖒"
+      "value": "𝐷𝐵𝑌✯"
     },
     "OWNER_NUMBER": {
-      "description": "Your WhatsApp number",
+      "description": "263710781795",
       "required": true,
-      "value": ""
+      "value": "true"
     },
     "AUTO_READ": {
       "description": "Enable bot to auto-read messages (true/false)",
@@ -40,7 +40,7 @@
     "AUTO_TYPING": {
       "description": "Enable bot to show typing status (true/false)",
       "required": false,
-      "value": "false"
+      "value": "true"
     },
     "AUTO_RECORDING": {
       "description": "Enable bot to show recording status (true/false)",
@@ -60,12 +60,12 @@
     "AUTO_STATUS_SEEN": {
       "description": "Enable bot to view statuses (true/false)",
       "required": false,
-      "value": "true"
+      "value": "false"
     },
     "AUTO_STATUS_REACT": {
       "description": "Enable bot to like statuses (true/false)",
       "required": false,
-      "value": "true"
+      "value": "false"
     },
     "AUTO_BLOCK": {
       "description": "Enable bot to auto-block specific numbers (true/false)",
@@ -75,7 +75,7 @@
     "REJECT_CALL": {
       "description": "Enable bot to reject incoming calls (true/false)",
       "required": false,
-      "value": "false"
+      "value": "true"
     }
   },
   "buildpacks": [
