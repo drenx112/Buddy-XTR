@@ -1068025,621 +1068025,410 @@
 
 
 
-import moment from 'moment-timezone';
-import fs from 'fs';
-import os from 'os';
-import pkg, { prepareWAMessageMedia } from '@whiskeysockets/baileys';
-const { generateWAMessageFromContent, proto } = pkg;
 import config from '../../config.cjs';
+import { randomBytes } from 'crypto';
 
-const alive = async (m, sock) => {
-  const prefix = config.PREFIX;
-  const mode = config.MODE;
-  const pushName = m.pushName || 'User';
+// Store auto-bio states and messages
+const autoBioUsers = new Map();
 
-  const cmd = m.body.startsWith(prefix)
-    ? m.body.slice(prefix.length).split(' ')[0].toLowerCase()
-    : '';
-
-  if (cmd === "menu") {
-    await m.React('🕵');
+// Time-based greetings
+const getTimeBasedGreeting = () => {
+    const now = new Date();
+    const hours = now.getHours();
     
-    // Uptime calculation
-    const uptimeSeconds = process.uptime();
-    const days = Math.floor(uptimeSeconds / (24 * 3600));
-    const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = Math.floor(uptimeSeconds % 60);
-
-    // Time-based greeting
-    const time2 = moment().tz("Asia/Karachi").format("HH:mm:ss");
-    let pushwish = "";
-    if (time2 < "05:00:00") pushwish = "Good Morning 🌄";
-    else if (time2 < "11:00:00") pushwish = "Good Morning 🌄";
-    else if (time2 < "15:00:00") pushwish = "Good Afternoon 🌅";
-    else if (time2 < "19:00:00") pushwish = "Good Evening 🌃";
-    else pushwish = "Good Night 🌌";
-
-    // Define different font styles
-    const fontStyles = [
-      {
-        name: "Bold",
-        transform: (text) => `*${text}*`
-      },
-      {
-        name: "Italic",
-        transform: (text) => `_${text}_`
-      },
-      {
-        name: "Monospace",
-        transform: (text) => '```' + text + '```'
-      },
-      {
-        name: "Strikethrough",
-        transform: (text) => `~${text}~`
-      },
-      {
-        name: "Small Caps",
-        transform: (text) => text.toUpperCase()
-      },
-      {
-        name: "Fancy",
-        transform: (text) => {
-          const fancyMap = {
-            a: '𝒶', b: '𝒷', c: '𝒸', d: '𝒹', e: '𝑒', f: '𝒻', g: '𝑔', h: '𝒽', i: '𝒾', j: '𝒿',
-            k: '𝓀', l: '𝓁', m: '𝓂', n: '𝓃', o: '𝑜', p: '𝓅', q: '𝓆', r: '𝓇', s: '𝓈', t: '𝓉',
-            u: '𝓊', v: '𝓋', w: '𝓌', x: '𝓍', y: '𝓎', z: '𝓏',
-            A: '𝒜', B: '𝐵', C: '𝒞', D: '𝒟', E: '𝐸', F: '𝐹', G: '𝒢', H: '𝐻', I: '𝐼', J: '𝒥',
-            K: '𝒦', L: '𝐿', M: '𝑀', N: '𝒩', O: '𝒪', P: '𝒫', Q: '𝒬', R: '𝑅', S: '𝒮', T: '𝒯',
-            U: '𝒰', V: '𝒱', W: '𝒲', X: '𝒳', Y: '𝒴', Z: '𝒵'
-          };
-          return text.split('').map(char => fancyMap[char] || char).join('');
-        }
-      },
-      {
-        name: "Double Struck",
-        transform: (text) => {
-          const doubleStruckMap = {
-            a: '𝕒', b: '𝕓', c: '𝕔', d: '𝕕', e: '𝕖', f: '𝕗', g: '𝕘', h: '𝕙', i: '𝕚', j: '𝕛',
-            k: '𝕜', l: '𝕝', m: '𝕞', n: '𝕟', o: '𝕠', p: '𝕡', q: '𝕢', r: '𝕣', s: '𝕤', t: '𝕥',
-            u: '𝕦', v: '𝕧', w: '𝕨', x: '𝕩', y: '𝕪', z: '𝕫',
-            A: '𝔸', B: '𝔹', C: 'ℂ', D: '𝔻', E: '𝔼', F: '𝔽', G: '𝔾', H: 'ℍ', I: '𝕀', J: '𝕁',
-            K: '𝕂', L: '𝕃', M: '𝕄', N: 'ℕ', O: '𝕆', P: 'ℙ', Q: 'ℚ', R: 'ℝ', S: '𝕊', T: '𝕋',
-            U: '𝕌', V: '𝕍', W: '𝕎', X: '𝕏', Y: '𝕐', Z: 'ℤ'
-          };
-          return text.split('').map(char => doubleStruckMap[char] || char).join('');
-        }
-      }
-    ];
-
-    // Language translations
-    const languageTranslations = [
-      {
-        name: "English",
-        translations: {
-          hello: "Hello",
-          uptime: "Uptime",
-          mode: "Mode",
-          prefix: "Prefix",
-          ownerCommands: "Owner Commands",
-          searchTools: "Search Tools",
-          aiCommands: "AI Commands",
-          religious: "Religious",
-          christian: "Christian",
-          islamic: "Islamic",
-          conversionTools: "Conversion Tools",
-          mediaDownloaders: "Media Downloaders",
-          logoMaker: "Logo Maker",
-          groupManagement: "Group Management",
-          audioFilters: "Audio Filters",
-          stickerCommands: "Sticker Commands",
-          otherCommands: "Other Commands",
-          stalkerTools: "Stalker Tools",
-          configuration: "Configuration",
-          helpPrompt: `Type ${prefix}help <command> for info`
-        }
-      },
-      {
-        name: "Spanish",
-        translations: {
-          hello: "Hola",
-          uptime: "Tiempo activo",
-          mode: "Modo",
-          prefix: "Prefijo",
-          ownerCommands: "Comandos de dueño",
-          searchTools: "Herramientas de búsqueda",
-          aiCommands: "Comandos de IA",
-          religious: "Religioso",
-          christian: "Cristiano",
-          islamic: "Islámico",
-          conversionTools: "Herramientas de conversión",
-          mediaDownloaders: "Descargadores de medios",
-          logoMaker: "Creador de logos",
-          groupManagement: "Gestión de grupo",
-          audioFilters: "Filtros de audio",
-          stickerCommands: "Comandos de stickers",
-          otherCommands: "Otros comandos",
-          stalkerTools: "Herramientas de stalkeo",
-          configuration: "Configuración",
-          helpPrompt: `Escribe ${prefix}help <comando> para información`
-        }
-      },
-      {
-        name: "French",
-        translations: {
-          hello: "Bonjour",
-          uptime: "Temps de fonctionnement",
-          mode: "Mode",
-          prefix: "Préfixe",
-          ownerCommands: "Commandes du propriétaire",
-          searchTools: "Outils de recherche",
-          aiCommands: "Commandes IA",
-          religious: "Religieux",
-          christian: "Chrétien",
-          islamic: "Islamique",
-          conversionTools: "Outils de conversion",
-          mediaDownloaders: "Téléchargeurs de médias",
-          logoMaker: "Créateur de logo",
-          groupManagement: "Gestion de groupe",
-          audioFilters: "Filtres audio",
-          stickerCommands: "Commandes d'autocollants",
-          otherCommands: "Autres commandes",
-          stalkerTools: "Outils de traçage",
-          configuration: "Configuration",
-          helpPrompt: `Tapez ${prefix}help <commande> pour info`
-        }
-      },
-      {
-        name: "Arabic",
-        translations: {
-          hello: "مرحباً",
-          uptime: "مدة التشغيل",
-          mode: "الوضع",
-          prefix: "البادئة",
-          ownerCommands: "أوامر المالك",
-          searchTools: "أدوات البحث",
-          aiCommands: "أوامر الذكاء الاصطناعي",
-          religious: "ديني",
-          christian: "مسيحي",
-          islamic: "إسلامي",
-          conversionTools: "أدوات التحويل",
-          mediaDownloaders: "برامج تنزيل الوسائط",
-          logoMaker: "صانع الشعارات",
-          groupManagement: "إدارة المجموعة",
-          audioFilters: "مرشحات الصوت",
-          stickerCommands: "أوامر الملصقات",
-          otherCommands: "أوامر أخرى",
-          stalkerTools: "أدوات التتبع",
-          configuration: "التكوين",
-          helpPrompt: `اكتب ${prefix}help <أمر> للمعلومات`
-        }
-      },
-      {
-        name: "German",
-        translations: {
-          hello: "Hallo",
-          uptime: "Betriebszeit",
-          mode: "Modus",
-          prefix: "Präfix",
-          ownerCommands: "Eigentümer-Befehle",
-          searchTools: "Such-Tools",
-          aiCommands: "KI-Befehle",
-          religious: "Religiös",
-          christian: "Christlich",
-          islamic: "Islamisch",
-          conversionTools: "Konvertierungstools",
-          mediaDownloaders: "Media-Downloader",
-          logoMaker: "Logo-Maker",
-          groupManagement: "Gruppenverwaltung",
-          audioFilters: "Audiofilter",
-          stickerCommands: "Sticker-Befehle",
-          otherCommands: "Andere Befehle",
-          stalkerTools: "Stalker-Tools",
-          configuration: "Konfiguration",
-          helpPrompt: `Tippe ${prefix}help <Befehl> für Infos`
-        }
-      },
-      {
-        name: "Japanese",
-        translations: {
-          hello: "こんにちは",
-          uptime: "稼働時間",
-          mode: "モード",
-          prefix: "プレフィックス",
-          ownerCommands: "所有者コマンド",
-          searchTools: "検索ツール",
-          aiCommands: "AIコマンド",
-          religious: "宗教的",
-          christian: "キリスト教",
-          islamic: "イスラム教",
-          conversionTools: "変換ツール",
-          mediaDownloaders: "メディアダウンローダー",
-          logoMaker: "ロゴメーカー",
-          groupManagement: "グループ管理",
-          audioFilters: "オーディオフィルター",
-          stickerCommands: "ステッカーコマンド",
-          otherCommands: "その他のコマンド",
-          stalkerTools: "ストーカーツール",
-          configuration: "設定",
-          helpPrompt: `${prefix}help <コマンド> で情報を表示`
-        }
-      },
-      {
-        name: "Russian",
-        translations: {
-          hello: "Привет",
-          uptime: "Время работы",
-          mode: "Режим",
-          prefix: "Префикс",
-          ownerCommands: "Команды владельца",
-          searchTools: "Инструменты поиска",
-          aiCommands: "AI команды",
-          religious: "Религиозный",
-          christian: "Христианский",
-          islamic: "Исламский",
-          conversionTools: "Инструменты конвертации",
-          mediaDownloaders: "Загрузчики медиа",
-          logoMaker: "Создатель лого",
-          groupManagement: "Управление группой",
-          audioFilters: "Аудио фильтры",
-          stickerCommands: "Команды стикеров",
-          otherCommands: "Другие команды",
-          stalkerTools: "Инструменты слежения",
-          configuration: "Конфигурация",
-          helpPrompt: `Введите ${prefix}help <команда> для информации`
-        }
-      },
-      {
-        name: "Chinese",
-        translations: {
-          hello: "你好",
-          uptime: "运行时间",
-          mode: "模式",
-          prefix: "前缀",
-          ownerCommands: "所有者命令",
-          searchTools: "搜索工具",
-          aiCommands: "AI命令",
-          religious: "宗教",
-          christian: "基督教",
-          islamic: "伊斯兰教",
-          conversionTools: "转换工具",
-          mediaDownloaders: "媒体下载器",
-          logoMaker: "标志制作器",
-          groupManagement: "群组管理",
-          audioFilters: "音频过滤器",
-          stickerCommands: "贴纸命令",
-          otherCommands: "其他命令",
-          stalkerTools: "追踪工具",
-          configuration: "配置",
-          helpPrompt: `输入${prefix}help <命令> 获取信息`
-        }
-      }
-    ];
-
-    // Select random font and language
-    const randomFont = fontStyles[Math.floor(Math.random() * fontStyles.length)];
-    const randomLang = languageTranslations[Math.floor(Math.random() * languageTranslations.length)];
-
-    // Apply the font transformation to menu sections
-    const transformMenuSection = (section) => {
-      const lines = section.split('\n');
-      return lines.map(line => {
-        // Don't transform the box characters
-        if (line.match(/^[╭╰╯╮│─「」•<>]+$/)) return line;
-        return randomFont.transform(line);
-      }).join('\n');
-    };
-
-    const menuSections = [
-      `╭──────────────────────╮
-│  ${randomLang.translations.hello} ${pushName}!
-│  
-│  ⏳ ${randomLang.translations.uptime}: ${days}d ${hours}h ${minutes}m ${seconds}s
-│  ⚙ ${randomLang.translations.mode}: ${mode}
-│  🔠 ${randomLang.translations.prefix}: ${prefix}
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.ownerCommands} 」───╮
-│ • block
-│ • unblock
-│ • join
-│ • crew
-│ • leave
-│ • setvar
-│ • restart
-│ • pp
-│ • ownerreact
-│ • heartreact
-│ • bc
-│ • send
-│ • upload
-│ • del
-│ • save
-│ • report
-│ • jid
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.searchTools} 」───╮
-│ • yts
-│ • google
-│ • imd
-│ • img
-│ • weather
-│ • playstore
-│ • news
-> to be fixed.
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.aiCommands} 」───╮
-│ • blackboxai
-│ • gpt
-│ • visit
-│ • define
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.religious} 」───╮
-│ ${randomLang.translations.christian}:
-│ • bible
-│ • biblelist
- ───「 ${randomLang.translations.islamic} 」───╮
-│ • surahaudio
-│ • surahurdu
-│ • asmaulhusna
-│ • prophetname
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.conversionTools} 」───╮
-│ • url
-│ • attp3
-│ • ebinary
-│ • dbinary
-│ • emojimix
-│ • tomp3
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.mediaDownloaders} 」───╮
-│ • insta
-│ • video
-│ • gdrive
-│ • github
-│ • tiktok
-│ • mediafire
-│ • play
-│ • apk
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.logoMaker} 」───╮
-│ • logo
-│ • hacker
-│ • blackpink
-│ • gossysilver
-│ • naruto
-│ • digitalglitch
-│ • pixelglitch
-│ • star
-│ • smoke
-│ • bear
-│ • neondevil
-│ • screen
-│ • nature
-│ • dragonball
-│ • foggyglass
-│ • neonlight
-│ • castlepop
-│ • frozenchristmas
-│ • foilballoon
-│ • colorfulpaint
-│ • americanflag
-│ • water
-│ • neondevil
-│ • underwater
-│ • dragonfire
-│ • bokeh
-│ • snow
-│ • sand3d
-│ • pubg
-│ • horror
-│ • blood
-│ • bulb
-│ • graffiti
-│ • thunder
-│ • thunder1
-│ • womensday
-│ • valentine
-│ • graffiti2
-│ • queencard
-│ • galaxy
-│ • pentakill
-│ • birthdayflower
-│ • zodiacs
-│ • water3d
-│ • textlight
-│ • wall
-│ • gold
-│ • glow
-│ • team
-│ • rotation
-│ • paint
-│ • avatar
-│ • typography
-│ • tattoo
-│ • luxury
-│ • logo
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.groupManagement} 」───╮
-│ • del
-│ • add
-│ • kick
-│ • welcome on
-│ • welcome off
-│ • promote
-│ • demote
-│ • tagall
-│ • left
-│ • hidetag
-│ • invite
-│ • mute
-│ • nolinks
-│ • unmute
-│ • groupopen
-│ • groupclose
-│ • groupinfo
-│ • poll
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.audioFilters} 」───╮
-│ • deep
-│ • bass
-│ • robot
-│ • reverse
-│ • slow
-│ • smooth
-│ • nightcore
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.stickerCommands} 」───╮
-│ • dance
-│ • poke
-│ • wink
-│ • happ
-│ • kick
-│ • kill
-│ • slap
-│ • bite
-│ • nom
-│ • highfive
-│ • wave
-│ • smile
-│ • blush
-│ • yeet
-│ • bonk
-│ • smug
-│ • pat
-│ • lick
-│ • kiss
-│ • awoo
-│ • hug
-│ • cry
-│ • cuddle
-│ • bully
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.otherCommands} 」───╮
-│ • fancy
-│ • ebinary
-│ • truth
-│ • dare
-│ • quiz
-│ • quizgc
-│ • insult
-│ • dbinary
-│ • get
-│ • fetch
-│ • update
-│ • mp3
-│ • tts
-│ • shorten
-│ • tempmail
-│ • checkmail
-│ • about
-│ • profile
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.stalkerTools} 」───╮
-│ • gitstalk
-│ • tikstalk
-│ • npmstalk
-│ • popinfo
-│ • lookup
-│ • wachannel
-╰──────────────────────╯`,
-
-      `╭───「 ${randomLang.translations.configuration} 」───╮
-│ • mode <private/public>
-│ • setprefix <symbol>
-│ • autosview <on/off>
-│ • antiword <on/off>
-│ • autoreact <on/off>
-│ • alwaysonline <on/off>
-│ • autoblock <on/off>
-│ • autobio <on/off>
-│ • anticall <on/off>
-│ • autorecording <on/off>
-│ • autotyping <on/off>
-╰──────────────────────╯
-> ${randomLang.translations.helpPrompt}`
-    ];
-
-    // Transform each section with the random font
-    const transformedMenu = menuSections.map(section => transformMenuSection(section)).join('\n\n');
-
-    await m.React('🔮');
-
-    // Prepare audio message
-    const audioMessage = {
-        audio: { 
-            url: 'https://files.catbox.moe/8k2q7p.mp3' 
-        },
-        mimetype: 'audio/mpeg',
-        ptt: false,
-        contextInfo: {
-            isForwarded: true,
-            forwardingScore: 999,
-            externalAdReply: {
-                title: "🎵 Menu Theme Music",
-                body: "Tap for free hacks.",
-                thumbnailUrl: 'https://files.catbox.moe/ptr27z.jpg',
-                sourceUrl: 'https://whatsapp.com/channel/0029Vak0genJ93wQXq3q6X3h',
-                mediaType: 2,
-                renderLargerThumbnail: true
-            }
-        }
-    };
-
-    // Send audio first
-    await sock.sendMessage(m.from, audioMessage, { quoted: m });
-
-    // Send menu with multiple forwarding contexts
-    const menuMessage = {
-        text: transformedMenu,
-        contextInfo: {
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363313938933929@newsletter',
-                newsletterName: "𝕭𝖔𝖙 𝖇𝖞 𝕮𝖆𝖗𝖑",
-                serverMessageId: -1,
-            },
-            forwardingScore: 999,
-            externalAdReply: {
-                title: "📜 Bot Command Menu",
-                body: `Using ${randomFont.name} font | Language: ${randomLang.name}`,
-                thumbnailUrl: 'https://files.catbox.moe/ptr27z.jpg',
-                sourceUrl: 'https://whatsapp.com/channel/0029Vak0genJ93wQXq3q6X3h',
-                mediaType: 1,
-                renderLargerThumbnail: true,
-                showAdAttribution: true
-            },
-            // Add multiple forwarding layers
-            forwardingScore: 999,
-            forwardedNewsletterMessageInfo: [
-                {
-                    newsletterJid: '120363313938933929@newsletter',
-                    newsletterName: "Bot Updates Channel",
-                    serverMessageId: -1
-                },
-                {
-                    newsletterJid: '120363313938933929@newsletter',
-                    newsletterName: "Command Center",
-                    serverMessageId: -1
-                }
-            ]
-        }
-    };
-
-    // Send menu message
-    await sock.sendMessage(m.from, menuMessage, { quoted: m });
-  }
+    if (hours >= 5 && hours < 12) return '🌄 Good morning';
+    if (hours >= 12 && hours < 17) return '☀️ Good afternoon';
+    if (hours >= 17 && hours < 21) return '🌇 Good evening';
+    return '🌙 Good night';
 };
 
-export default alive;
+// Get current Nairobi time
+const getNairobiTime = () => {
+    const now = new Date();
+    // Nairobi is UTC+3
+    const options = {
+        timeZone: 'Africa/Nairobi',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    };
+    return now.toLocaleTimeString('en-US', options);
+};
+
+// Expanded quotes list with time awareness
+const getTimeAwareQuotes = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const isDaytime = hours >= 6 && hours < 18;
+    const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now.getDay()];
+    const month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][now.getMonth()];
+    
+    const timeAwareQuotes = [
+        // Basic information
+        `Buddy-XTR by carl24tech • ${getNairobiTime()}`,
+        `Today is ${dayOfWeek}, ${month} ${now.getDate()} • ${getNairobiTime()}`,
+        
+        // Time-based quotes
+        isDaytime ? "🌞 Seize the daylight, it's fleeting" : "🌜 The night is full of possibilities",
+        isDaytime ? "Morning is when the world begins anew" : "Night is when thoughts grow wings",
+        isDaytime ? "Daylight is the best disinfectant" : "Stars can't shine without darkness",
+        
+        // Tech quotes
+        "Innovation distinguishes between a leader and a follower",
+        "The only way to do great work is to love what you do",
+        "Stay hungry, stay foolish",
+        "Simplicity is the ultimate sophistication",
+        "Move fast and break things",
+        "The best way to predict the future is to invent it",
+        "Code is poetry",
+        "First, solve the problem. Then, write the code",
+        "Technology is best when it brings people together",
+        "Software is eating the world",
+        "The web as I envisaged it, we have not seen it yet",
+        "The computer was born to solve problems that did not exist before",
+        
+        // Philosophical quotes
+        "The mind is everything. What you think you become",
+        "Quality is not an act, it's a habit",
+        "In the middle of difficulty lies opportunity",
+        "The only true wisdom is in knowing you know nothing",
+        "Strive not to be a success, but rather to be of value",
+        "Life is what happens when you're busy making other plans",
+        "The journey of a thousand miles begins with one step",
+        "Do what you can, with what you have, where you are",
+        "What you seek is seeking you",
+        "This too shall pass",
+        
+        // Motivational quotes
+        "Your limitation—it's only your imagination",
+        "Push yourself, because no one else is going to do it for you",
+        "Great things never come from comfort zones",
+        "Dream it. Wish it. Do it",
+        "Success doesn't just find you. You have to go out and get it",
+        "The harder you work for something, the greater you'll feel when you achieve it",
+        "Dream bigger. Do bigger",
+        "Don't stop when you're tired. Stop when you're done",
+        
+        // Nairobi-specific
+        `Nairobi time: ${getNairobiTime()} • Make every moment count`,
+        "From the Silicon Savannah to the world",
+        "Home of tech innovation in Africa",
+        
+        // Funny/lighthearted
+        "Error 404: Bio not found",
+        "My other bio is a Tesla",
+        "Currently out of bio ideas",
+        "This bio updates more than WhatsApp",
+        "Battery low. Need more coffee",
+        
+        // Daily wisdom
+        "Today's goal: Be better than yesterday",
+        "Every day is a second chance",
+        "Small steps every day lead to big results",
+        "Make today so awesome yesterday gets jealous",
+        
+        // Time management
+        `It's ${getNairobiTime()} - Are you using your time wisely?`,
+        "Time you enjoy wasting is not wasted time",
+        "Don't watch the clock; do what it does. Keep going",
+        
+        // Weekend specials
+        dayOfWeek === 'Friday' ? "TGIF! Weekend vibes loading..." : "",
+        dayOfWeek === 'Monday' ? "New week, new opportunities!" : "",
+        (dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday') ? "Weekend mode: Activated" : ""
+    ].filter(quote => quote !== ""); // Remove any empty quotes
+    
+    return timeAwareQuotes;
+};
+
+const autobio = async (m, sock) => {
+    const prefix = config.PREFIX;
+    const cmd = m.body.startsWith(prefix) ? m.body.slice(prefix.length).split(' ')[0].toLowerCase() : '';
+    const text = m.body.slice(prefix.length + cmd.length).trim();
+
+    if (cmd !== "autobio") return;
+
+    try {
+        const userId = m.sender;
+        const args = text.split(' ');
+        const subCmd = args[0]?.toLowerCase();
+
+        if (!subCmd) {
+            // Show help if no subcommand provided
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `📝 *Auto-Bio Command Help* • ${getNairobiTime()}\n\n` +
+                          '🔹 *Enable/Disable*\n' +
+                          `\`\`\`${prefix}autobio on\`\`\` - Enable auto-bio\n` +
+                          `\`\`\`${prefix}autobio off\`\`\` - Disable auto-bio\n\n` +
+                          '🔹 *Set Custom Message*\n' +
+                          `\`\`\`${prefix}autobio set <your message>\`\`\` - Set custom bio message\n\n` +
+                          '🔹 *Current Status*\n' +
+                          `\`\`\`${prefix}autobio status\`\`\` - Show current settings\n\n` +
+                          '🔹 *View Quotes*\n' +
+                          `\`\`\`${prefix}autobio list\`\`\` - Show all available quotes\n\n` +
+                          `ℹ️ Auto-bio will rotate your WhatsApp about text every minute with:\n` +
+                          `• Time-based greetings\n• Your custom message\n• ${getTimeAwareQuotes().length} dynamic quotes\n` +
+                          `⏰ Timezone: Africa/Nairobi (${getNairobiTime()})`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+            return;
+        }
+
+        if (subCmd === 'on') {
+            // Enable auto-bio
+            if (!autoBioUsers.has(userId)) {
+                autoBioUsers.set(userId, {
+                    enabled: true,
+                    customMessage: '',
+                    interval: null
+                });
+            } else {
+                autoBioUsers.get(userId).enabled = true;
+            }
+
+            // Start the interval if not already running
+            const userData = autoBioUsers.get(userId);
+            if (!userData.interval) {
+                userData.interval = setInterval(async () => {
+                    try {
+                        if (userData.enabled) {
+                            const greeting = getTimeBasedGreeting();
+                            const timeAwareQuotes = getTimeAwareQuotes();
+                            
+                            const messages = [
+                                ...(userData.customMessage ? [`${greeting}! ${userData.customMessage}`] : []),
+                                ...timeAwareQuotes
+                            ];
+                            
+                            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                            await sock.updateProfileStatus(randomMessage);
+                        }
+                    } catch (error) {
+                        console.error('Auto-bio update error:', error);
+                    }
+                }, 60000); // 1 minute interval
+                
+                // Immediate first update
+                const greeting = getTimeBasedGreeting();
+                const timeAwareQuotes = getTimeAwareQuotes();
+                const messages = [
+                    ...(userData.customMessage ? [`${greeting}! ${userData.customMessage}`] : []),
+                    ...timeAwareQuotes
+                ];
+                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                await sock.updateProfileStatus(randomMessage);
+            }
+
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `✅ *Auto-Bio Enabled* • ${getNairobiTime()}\n\n` +
+                          'Your WhatsApp about will now update automatically every minute with:\n' +
+                          '• Time-based greetings\n' +
+                          '• Your custom message (if set)\n' +
+                          `• ${getTimeAwareQuotes().length} dynamic quotes\n` +
+                          `⏰ Timezone: Africa/Nairobi (${getNairobiTime()})`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+            await m.React('✅');
+
+        } else if (subCmd === 'off') {
+            // Disable auto-bio
+            if (autoBioUsers.has(userId)) {
+                const userData = autoBioUsers.get(userId);
+                userData.enabled = false;
+                if (userData.interval) {
+                    clearInterval(userData.interval);
+                    userData.interval = null;
+                }
+            }
+
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `❌ *Auto-Bio Disabled* • ${getNairobiTime()}\n\n` +
+                          'Your WhatsApp about will no longer update automatically.',
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+            await m.React('✅');
+
+        } else if (subCmd === 'set') {
+            // Set custom message
+            const customMessage = args.slice(1).join(' ');
+            if (!customMessage) {
+                await sock.sendMessage(
+                    m.from,
+                    { 
+                        text: `⚠️ *Please provide a message* • ${getNairobiTime()}\n\n` +
+                              `Example: \`\`\`${prefix}autobio set My custom bio message\`\`\``,
+                        contextInfo: {
+                            mentionedJid: [m.sender],
+                            forwardingScore: 999,
+                            isForwarded: true
+                        }
+                    },
+                    { quoted: m }
+                );
+                await m.React('❌');
+                return;
+            }
+
+            if (!autoBioUsers.has(userId)) {
+                autoBioUsers.set(userId, {
+                    enabled: false,
+                    customMessage: customMessage,
+                    interval: null
+                });
+            } else {
+                autoBioUsers.get(userId).customMessage = customMessage;
+            }
+
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `📝 *Custom Message Set* • ${getNairobiTime()}\n\n` +
+                          `"${customMessage}"\n\n` +
+                          'This will be combined with time-based greetings and included in your rotating bio messages.',
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+            await m.React('✅');
+
+        } else if (subCmd === 'status') {
+            // Show current status
+            const userData = autoBioUsers.get(userId) || {
+                enabled: false,
+                customMessage: ''
+            };
+
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `ℹ️ *Auto-Bio Status* • ${getNairobiTime()}\n\n` +
+                          `🔹 *Status:* ${userData.enabled ? 'Enabled ✅' : 'Disabled ❌'}\n` +
+                          `🔹 *Custom Message:* ${userData.customMessage || 'Not set'}\n` +
+                          `🔹 *Available Quotes:* ${getTimeAwareQuotes().length}\n` +
+                          `🔹 *Timezone:* Africa/Nairobi\n\n` +
+                          `Use \`\`\`${prefix}autobio list\`\`\` to view all available quotes.`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+            await m.React('ℹ️');
+
+        } else if (subCmd === 'list') {
+            // Show all available quotes
+            const timeAwareQuotes = getTimeAwareQuotes();
+            const chunkSize = 20; // Number of quotes per message
+            const chunks = [];
+            
+            for (let i = 0; i < timeAwareQuotes.length; i += chunkSize) {
+                chunks.push(timeAwareQuotes.slice(i, i + chunkSize));
+            }
+
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `📜 *Available Quotes (${timeAwareQuotes.length})* • ${getNairobiTime()}\n\n` +
+                          `Here are the first ${Math.min(20, timeAwareQuotes.length)} quotes:\n\n` +
+                          chunks[0].map((quote, index) => `${index + 1}. ${quote}`).join('\n') +
+                          `\n\nUse \`\`\`${prefix}autobio list 2\`\`\` to see the next set.`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+
+            // Handle pagination if requested
+            const page = parseInt(args[1]) || 1;
+            if (page > 1 && page <= chunks.length) {
+                await sock.sendMessage(
+                    m.from,
+                    { 
+                        text: `📜 *Quotes Page ${page}/${chunks.length}*\n\n` +
+                              chunks[page - 1].map((quote, index) => 
+                                  `${(page - 1) * chunkSize + index + 1}. ${quote}`
+                              ).join('\n') +
+                              `\n\nUse \`\`\`${prefix}autobio list ${page + 1}\`\`\` for more.`,
+                        contextInfo: {
+                            mentionedJid: [m.sender],
+                            forwardingScore: 999,
+                            isForwarded: true
+                        }
+                    },
+                    { quoted: m }
+                );
+            }
+            
+            await m.React('📜');
+
+        } else {
+            // Invalid subcommand
+            await sock.sendMessage(
+                m.from,
+                { 
+                    text: `❌ *Invalid Command* • ${getNairobiTime()}\n\n` +
+                          `Use \`\`\`${prefix}autobio\`\`\` for help with commands.`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 999,
+                        isForwarded: true
+                    }
+                },
+                { quoted: m }
+            );
+            await m.React('❌');
+        }
+
+    } catch (error) {
+        console.error('Auto-bio Error:', error);
+        await m.React('❌');
+        await sock.sendMessage(
+            m.from,
+            { 
+                text: `⚠️ *An error occurred* • ${getNairobiTime()}\n\n` +
+                      'Please try again later.',
+                contextInfo: {
+                    mentionedJid: [m.sender],
+                    forwardingScore: 999,
+                    isForwarded: true
+                }
+            },
+            { quoted: m }
+        );
+    }
+};
+
+export default autobio;
